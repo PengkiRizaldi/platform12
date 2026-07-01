@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <title>Aplikasi Toko PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <!-- Memanggil Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="p-8 bg-gray-50">
+
+    <!-- Form Tambah Barang -->
+<div class="bg-white p-5 shadow-sm border border-gray-200 rounded-xl mb-8">
+    <div class="flex items-center justify-between mb-4">
+    <h2 id="judul-form" class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-500"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        Tambah Barang Baru
+    </h2>
+    <button onclick="logout()" class="inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:shadow-lg">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Logout
+        </button>
+    </div>
+
+    <!-- Letakkan INI di ATAS Tabel Data Anda -->
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Daftar Barang</h2>
+        <div class="relative">
+            <input type="text" id="input-cari" onkeyup="jalankanPencarian()" placeholder="Cari nama barang..." class="border border-gray-300 rounded-lg py-2 px-4 pl-10 focus:ring-2 focus:ring-cyan-500 outline-none">
+            <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <!-- Tombol Buka Tab Baru untuk Print -->
+        <button onclick="window.open('cetak.html', '_blank')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition shadow-md">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Ekspor PDF
+        </button>
+    </div>
+
+    
+    <!-- Hidden input untuk menyimpan ID saat mode Edit -->
+    <input type="hidden" id="input-id" value="">
+    <form id="form-tambah" class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1">
+            <label class="block text-xs text-gray-500 font-bold uppercase mb-1">Nama Barang</label>
+            <input type="text" id="input-nama" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Misal: Mouse Wireless" required>
+        </div>
+        <div class="flex-1">
+            <label class="block text-xs text-gray-500 font-bold uppercase mb-1">Harga (Rp)</label>
+            <input type="number" id="input-harga" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Misal: 150000" required>
+        </div>
+        
+        <div class="flex-1">
+    		<label class="block text-xs text-gray-500 font-bold uppercase mb-1">Foto Barang</label>
+    		<input type="file" id="input-gambar" accept="image/*" class="w-full border border-gray-300 p-1.5 rounded-lg">
+		</div>
+        
+        <div class="flex flex-col justify-end gap-2">
+            <button type="submit" id="btn-submit"
+                class="inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 hover:shadow-lg h-[42px]">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Simpan
+            </button>
+            <button type="button" id="btn-batal" onclick="batalEdit()"
+                class="hidden inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-600 hover:text-gray-800 border border-gray-300 font-semibold py-2 px-6 rounded-lg transition-all duration-200 h-[42px]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                Batal
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-500"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+            Top 5 Barang Termahal
+        </h2>
+        
+        <!-- Kunci Container: relative h-72 (tinggi ~288px) -->
+        <div class="relative h-72 w-full">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+
+
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-bold">Daftar Barang</h1>
+        
+    </div>
+    <table class="w-full bg-white shadow-md rounded">
+        <thead class="bg-emerald-500 text-white">
+            <tr> <th class="py-2 px-3">Gambar</th> <th class="py-2 px-3">Nama Barang</th> <th class="py-2 px-3">Harga</th> <th class="py-2 px-3">Aksi</th> </tr>
+        </thead>
+        <!-- Area ini sengaaja dibiarkan KOSONG. JS yang akan mengisinya -->
+        <tbody id="tabel-barang">
+        </tbody>
+    </table>
+
+    <!-- Letakkan INI di BAWAH Tabel Data Anda -->
+    <div class="flex justify-between items-center mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div class="text-sm text-gray-600" id="info-halaman">
+            Halaman 1 dari 1 (Total: 0 Data)
+        </div>
+        <div class="flex gap-2">
+            <button id="btn-prev" onclick="gantiHalaman(-1)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition disabled:opacity-50" disabled>Mundur</button>
+            <button id="btn-next" onclick="gantiHalaman(1)" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg transition disabled:opacity-50" disabled>Lanjut</button>
+        </div>
+    </div>
+
+    <!-- Memanggil file logika JS -->
+    <script src="app.js"></script>
+</body>
+</html>
