@@ -33,7 +33,7 @@ async function ambilDataBarang() {
     try {
         // Rangkai URL dinamis menggunakan Template Literal (Backtick)
         // Jika ada Token, selipkan di Header!
-        const urlAPI = `http://localhost/Platform/api-toko/get_barang.php?cari=${keywordPencarian}&page=${halamanSaatIni}`;
+        const urlAPI = `https://pengkirizaldi-webapp1.infinityfreeapp.com/api-toko/get_barang.php?cari=${keywordPencarian}&page=${halamanSaatIni}`;
         
         const response = await fetch(urlAPI, {
             headers: {
@@ -53,20 +53,47 @@ async function ambilDataBarang() {
         
         if (hasil.data && hasil.data.length > 0) {
             hasil.data.forEach(barang => {
-                let urlGambar = barang.gambar 
-                    ? `http://localhost/Platform/api-toko/uploads/${barang.gambar}` 
-                    : `https://via.placeholder.com/50?text=No+Img`;
+                // Buat URL Google Maps dari koordinat barang
+                let linkMaps = '<span style="color:#94a3b8;">-</span>';
+                if (barang.latitude && barang.longitude) {
+                    const url = `https://maps.google.com/?q=${barang.latitude},${barang.longitude}`;
+                    linkMaps = `
+                        <div style="font-size:0.72rem; color:#64748b;">
+                            ${parseFloat(barang.latitude).toFixed(4)}, 
+                            ${parseFloat(barang.longitude).toFixed(4)}
+                        </div>
+                        <a href="${url}" target="_blank" 
+                           style="color:#2563eb; font-size:0.75rem; font-weight:600;">
+                            🗺 Buka Map
+                        </a>
+                    `;
+                }
+
+                // Badge kode QR
+                const badgeQr = barang.kode_qr
+                    ? `<span style="font-family:monospace; font-size:0.68rem; 
+                                    background:#f1f5f9; padding:2px 5px; border-radius:4px;">
+                           ${barang.kode_qr}
+                       </span>`
+                    : '-';
+
                 // Escape tanda kutip satu demi keamanan pemanggilan parameter JS inline
                 const namaEscaped = barang.nama_barang.replace(/'/g, "\\'");
+
+                // id="row-${barang.id}" diperlukan untuk highlight Smart Gateway!
                 barisHTML += `
-                    <tr class="border-b text-center p-2 hover:bg-gray-50">
+                    <tr id="row-${barang.id}" class="border-b text-center p-2 hover:bg-gray-50">
                         <td class="py-2">
-                            <img src="http://localhost/Platform/api-toko/uploads/${barang.gambar}" 
+                            <img src="https://pengkirizaldi-webapp1.infinityfreeapp.com/api-toko/uploads/${barang.gambar}" 
                                 class="w-12 h-12 object-cover rounded mx-auto border" 
                                 alt="${barang.nama_barang}">
                         </td>
-                        <td class="py-2">${barang.nama_barang}</td>
+                        <td class="py-2 text-left">
+                            ${barang.nama_barang}<br>
+                            ${badgeQr}
+                        </td>
                         <td class="py-2">Rp ${Number(barang.harga).toLocaleString('id-ID')}</td>
+                        <td class="py-2" style="text-align:center;">${linkMaps}</td>
                         <td class="py-3">
                             <div class="flex gap-2 justify-center">
                                 <button onclick="editBarang(${barang.id}, '${namaEscaped}', ${barang.harga})"
@@ -95,7 +122,7 @@ async function ambilDataBarang() {
                 `;
             });
         } else {
-            barisHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">Data tidak ditemukan</td></tr>`;
+            barisHTML = `<tr><td colspan="5" class="text-center py-4 text-gray-500">Data tidak ditemukan</td></tr>`;
         }
 
         document.getElementById('tabel-barang').innerHTML = barisHTML;
@@ -145,7 +172,7 @@ formTambah.addEventListener('submit', async function(event) {
     try {
         if (isEditMode) {
             // Mode EDIT: Kirim data JSON menggunakan PUT
-            response = await fetch('http://localhost/Platform/api-toko/edit_barang.php', {
+            response = await fetch('https://pengkirizaldi-webapp1.infinityfreeapp.com/api-toko/edit_barang.php', {
                 method: 'PUT',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -166,7 +193,7 @@ formTambah.addEventListener('submit', async function(event) {
                 dataKirim.append('gambar', fileGambar);
             }
 
-            response = await fetch('http://localhost/Platform/api-toko/tambah_barang.php', {
+            response = await fetch('https://pengkirizaldi-webapp1.infinityfreeapp.com/api-toko/tambah_barang.php', {
                 method: 'POST',
                 headers: {
                     'Authorization': myToken
@@ -207,7 +234,7 @@ async function hapusBarang(id_target) {
     
     if (yakin) {
         try {
-            const response = await fetch('http://localhost/Platform/api-toko/hapus_barang.php', {
+            const response = await fetch('https://pengkirizaldi-webapp1.infinityfreeapp.com/api-toko/hapus_barang.php', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -271,6 +298,11 @@ function batalEdit() {
     inputId.value = '';
     formTambah.reset();
 
+    // Matikan form scanner jika sedang aktif
+    if (typeof matikanFormScanner === 'function') {
+        matikanFormScanner();
+    }
+
     judulForm.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-500">
             <path d="M5 12h14"/><path d="M12 5v14"/>
@@ -305,7 +337,7 @@ function logout() {
 async function renderDashboard() {
     try {
         // Ambil data JSON dari backend dengan Headers Authorization
-        const response = await fetch('http://localhost/Platform/api-toko/statistik.php', {
+        const response = await fetch('https://pengkirizaldi-webapp1.infinityfreeapp.com/api-toko/statistik.php', {
             headers: {
                 'Authorization': myToken || ''
             }
@@ -358,6 +390,256 @@ async function renderDashboard() {
         }
     } catch (error) {
         console.error('Gagal memuat grafik:', error);
+    }
+}
+
+// =========================================
+// QR Scanner - State Global
+// =========================================
+let _mainQrScanner = null;   // Instance scanner di modal utama
+let _formQrScanner = null;   // Instance scanner di modal form
+let _qrLastResult  = null;   // Simpan hasil lookup: { kodeQr, barang }
+
+// -- 1. BUKA MODAL SCANNER ------------------------------------
+// mode = 'search'  -> setelah scan, cari barang di tabel
+// mode = 'tambah'  -> setelah scan, buka form tambah
+function bukaModalQrScan(mode) {
+    _qrLastResult = null;
+
+    // Update judul & hint sesuai mode
+    document.getElementById('qr-modal-title').textContent =
+        mode === 'tambah' ? 'Scan QR -> Tambah Barang' : 'Scan QR -> Cari Barang';
+    document.getElementById('qr-modal-hint').textContent =
+        mode === 'tambah'
+            ? 'Jika belum ada, form tambah akan terbuka otomatis.'
+            : 'Jika ada di database, barang langsung ditampilkan di tabel.';
+
+    document.getElementById('modal-qr-scan').classList.add('active');
+    initMainQrScanner(); // Nyalakan kamera
+}
+
+// -- 2. INIT SCANNER KAMERA -----------------------------------
+function initMainQrScanner() {
+    if (_mainQrScanner) return; // Jangan dobel
+    _mainQrScanner = new Html5QrcodeScanner(
+        'qr-reader-main',
+        { fps: 10, qrbox: { width: 240, height: 240 } },
+        false
+    );
+    _mainQrScanner.render(
+        async function(decodedText) {      // <- CALLBACK SUKSES
+            _mainQrScanner.pause(true);   // Jeda scanning
+            tampilQrStatus(decodedText, 'loading');
+
+            // CEK KE API: apakah kode ini sudah ada di database?
+            try {
+                const hasil = await apiRequest(
+                    `/barang.php?kode_qr=${encodeURIComponent(decodedText)}`, 'GET'
+                );
+                if (hasil.status === 'success' && hasil.data) {
+                    _qrLastResult = { kodeQr: decodedText, barang: hasil.data };
+                    tampilQrStatus(decodedText, 'found', hasil.data);
+                } else {
+                    _qrLastResult = { kodeQr: decodedText, barang: null };
+                    tampilQrStatus(decodedText, 'notfound');
+                }
+            } catch {
+                _qrLastResult = { kodeQr: decodedText, barang: null };
+                tampilQrStatus(decodedText, 'notfound');
+            }
+        },
+        function() {} // <- CALLBACK GAGAL: diabaikan
+    );
+}
+
+// -- 3. TAMPILKAN STATUS HASIL SCAN --------------------------
+function tampilQrStatus(kode, state, barang) {
+    document.getElementById('qr-status-box').style.display = 'block';
+    document.getElementById('qr-scanned-text').textContent = kode;
+
+    // Reset semua state
+    ['qr-state-loading','qr-state-found','qr-state-notfound']
+        .forEach(id => document.getElementById(id).style.display = 'none');
+
+    if (state === 'loading') {
+        document.getElementById('qr-state-loading').style.display = 'flex';
+    } else if (state === 'found') {
+        document.getElementById('qr-found-nama').textContent  = barang.nama_barang;
+        document.getElementById('qr-found-harga').textContent = 'Rp ' + barang.harga;
+        document.getElementById('qr-state-found').style.display = 'block';
+    } else { // notfound
+        document.getElementById('qr-state-notfound').style.display = 'block';
+    }
+}
+
+// -- 4. AKSI: Barang DITEMUKAN -> tampilkan di tabel ----------
+function eksekusiQrFound() {
+    const kode = _qrLastResult.kodeQr;
+    const searchInput = document.getElementById('input-search');
+    if (searchInput) {
+        searchInput.value = kode;
+    }
+    
+    // Sinkronkan ke input-cari utama dan picu pencarian
+    const inputCari = document.getElementById('input-cari');
+    if (inputCari) {
+        inputCari.value = kode;
+    }
+    jalankanPencarian();
+
+    tutupModalQrScan();
+    showToast('🔍 Menampilkan barang: ' + kode, 'info');
+
+    // Highlight baris setelah data dimuat
+    setTimeout(() => {
+        const barang = _qrLastResult.barang;
+        if (barang?.id) {
+            const row = document.getElementById(`row-${barang.id}`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                row.style.background = '#d1fae5';
+                setTimeout(() => row.style.background = '', 2500);
+            }
+        }
+    }, 600);
+}
+
+// -- 5. AKSI: Barang BARU -> buka form tambah + prefill --------
+function eksekusiQrTambah() {
+    const kode = _qrLastResult.kodeQr;
+    tutupModalQrScan();
+    setTimeout(() => {
+        bukaModal('tambah');  // Buka modal form
+        const inputQr = document.getElementById('form-kode-qr');
+        if (inputQr) {
+            inputQr.value = kode;
+            inputQr.style.borderColor = '#059669'; // Highlight hijau
+            setTimeout(() => inputQr.style.borderColor = '', 2000);
+        }
+        setTimeout(() => document.getElementById('form-nama')?.focus(), 150);
+        showToast(`📦 Kode "${kode}" terisi. Lengkapi nama & harga.`, 'info');
+    }, 300);
+}
+
+// -- 6. RESET & SCAN ULANG ------------------------------------
+function resetQrScanner() {
+    if (_mainQrScanner) { _mainQrScanner.clear().catch(()=>{}); _mainQrScanner = null; }
+    document.getElementById('qr-reader-main').innerHTML = '';
+    document.getElementById('qr-status-box').style.display = 'none';
+    setTimeout(initMainQrScanner, 100); // Re-init scanner
+}
+
+// -- 7. TUTUP MODAL -------------------------------------------
+function tutupModalQrScan() {
+    if (_mainQrScanner) { _mainQrScanner.clear().catch(()=>{}); _mainQrScanner = null; }
+    document.getElementById('qr-reader-main').innerHTML = '';
+    document.getElementById('qr-status-box').style.display = 'none';
+    document.getElementById('modal-qr-scan').classList.remove('active');
+}
+
+// =========================================
+// Geolokasi GPS
+// =========================================
+function dapatkanLokasi() {
+    const btnGps   = document.getElementById('btn-lacak-gps');
+    const inputLat = document.getElementById('form-latitude');
+    const inputLng = document.getElementById('form-longitude');
+
+    if (!navigator.geolocation) {
+        showToast('Browser tidak mendukung Geolocation.', 'error');
+        return;
+    }
+
+    btnGps.disabled = true;
+    btnGps.innerHTML = '⏳ Melacak...';
+
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            inputLat.value = position.coords.latitude.toFixed(7);
+            inputLng.value = position.coords.longitude.toFixed(7);
+            showToast('📍 Lokasi GPS berhasil dikunci!', 'success');
+            btnGps.disabled = false;
+            btnGps.innerHTML = '✅ Lokasi Terkunci';
+            btnGps.style.background = 'var(--success)';
+        },
+        function() {
+            showToast('Gagal. Pastikan GPS aktif dan izin diberikan.', 'error');
+            btnGps.disabled = false;
+            btnGps.innerHTML = '📍 Lacak GPS Saya';
+        }
+    );
+}
+
+// =========================================
+// Simpan Barang Baru (dengan kode_qr & GPS)
+// =========================================
+async function simpanBarangBaru() {
+    const dataKirim = new FormData();
+    dataKirim.append('nama_barang', document.getElementById('form-nama').value);
+    dataKirim.append('harga',       document.getElementById('form-harga').value);
+    dataKirim.append('stok',        document.getElementById('form-stok').value);
+    dataKirim.append('kategori',    document.getElementById('form-kategori').value);
+
+    // Data Hardware (QR & GPS)
+    dataKirim.append('kode_qr',   document.getElementById('form-kode-qr').value);
+    dataKirim.append('latitude',  document.getElementById('form-latitude').value);
+    dataKirim.append('longitude', document.getElementById('form-longitude').value);
+
+    const gambar = document.getElementById('form-gambar').files[0];
+    if (gambar) dataKirim.append('gambar', gambar);
+
+    const hasil = await apiRequest('/barang.php', 'POST', dataKirim);
+    if (hasil.status === 'success') {
+        showToast('✅ Barang berhasil ditambahkan!', 'success');
+        tutupModal();
+        ambilDataBarang();
+    }
+}
+
+// =========================================
+// QR Scanner di Form Tambah (Inline)
+// =========================================
+function toggleFormScanner() {
+    const readerDiv = document.getElementById('form-reader');
+    if (!readerDiv) return;
+
+    if (readerDiv.style.display === 'none') {
+        readerDiv.style.display = 'block';
+        
+        if (!_formQrScanner) {
+            _formQrScanner = new Html5QrcodeScanner(
+                'form-reader',
+                { fps: 10, qrbox: { width: 200, height: 200 } },
+                /* verbose= */ false
+            );
+            _formQrScanner.render(
+                function(decodedText) { // Callback Sukses
+                    const inputQr = document.getElementById('form-kode-qr');
+                    if (inputQr) {
+                        inputQr.value = decodedText;
+                        inputQr.style.borderColor = '#10b981'; // Green border highlight
+                        setTimeout(() => inputQr.style.borderColor = '', 2000);
+                    }
+                    showToast('📷 QR/Barcode berhasil di-scan!', 'success');
+                    matikanFormScanner();
+                },
+                function() {} // Callback Gagal (diabaikan)
+            );
+        }
+    } else {
+        matikanFormScanner();
+    }
+}
+
+function matikanFormScanner() {
+    const readerDiv = document.getElementById('form-reader');
+    if (readerDiv) {
+        readerDiv.style.display = 'none';
+        readerDiv.innerHTML = ''; // Reset container
+    }
+    if (_formQrScanner) {
+        _formQrScanner.clear().catch(()=>{});
+        _formQrScanner = null;
     }
 }
 
