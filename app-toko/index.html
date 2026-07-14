@@ -1,119 +1,382 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aplikasi Toko PWA</title>
     <link rel="manifest" href="manifest.json">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Memanggil Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        #modal-qr-scan.active {
+            display: flex !important;
+        }
+        /* Custom scrollbar for premium feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Custom stylings for QR / Barcode & GPS form groups */
+        .form-group button {
+            transition: all 0.2s ease-in-out;
+        }
+        .form-group button:active {
+            transform: scale(0.95);
+        }
+
+        /* Custom stylings for html5-qrcode library elements */
+        #form-reader, #qr-reader-main {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 16px !important;
+            overflow: hidden !important;
+            background-color: #fafafa !important;
+        }
+        #form-reader img, #qr-reader-main img {
+            display: none !important;
+        }
+        #form-reader button, #qr-reader-main button {
+            background-color: #4f46e5 !important;
+            color: white !important;
+            border: none !important;
+            padding: 8px 16px !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            box-shadow: 0 4px 6px -1px rgb(79 70 229 / 0.1), 0 2px 4px -2px rgb(79 70 229 / 0.1) !important;
+        }
+        #form-reader button:hover, #qr-reader-main button:hover {
+            background-color: #4338ca !important;
+            box-shadow: 0 10px 15px -3px rgb(79 70 229 / 0.2) !important;
+        }
+        #form-reader select, #qr-reader-main select {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 8px !important;
+            padding: 6px 12px !important;
+            font-size: 13px !important;
+            outline: none !important;
+            background-color: white !important;
+            cursor: pointer !important;
+        }
+    </style>
 </head>
-<body class="p-8 bg-gray-50">
+<body class="bg-[#f8fafc] text-slate-800 font-sans min-h-screen pb-12">
+    <!-- Ambient top glow -->
+    <div class="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-amber-500/10 to-transparent pointer-events-none -z-10"></div>
 
-    <!-- Form Tambah Barang -->
-<div class="bg-white p-5 shadow-sm border border-gray-200 rounded-xl mb-8">
-    <div class="flex items-center justify-between mb-4">
-    <h2 id="judul-form" class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-500"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-        Tambah Barang Baru
-    </h2>
-    <button onclick="logout()" class="inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 hover:shadow-lg">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            Logout
-        </button>
+    <!-- Main Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        
+        <!-- Header / Navigation -->
+        <header class="bg-white/80 backdrop-blur-md border border-slate-200/80 rounded-2xl p-5 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-md shadow-orange-500/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Aplikasi Toko PWA</h1>
+                    <p class="text-xs text-slate-500 font-medium">Sistem Manajemen Inventaris Pintar</p>
+                </div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                <!-- Search bar in header -->
+                <div class="relative w-full md:w-64">
+                    <input type="search" id="input-search" placeholder="Scan/cari kode..."
+                        class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-12 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm transition-all">
+                    <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <button onclick="bukaModalQrScan('search')"
+                        class="absolute right-1.5 top-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-lg text-[10px] transition-all flex items-center gap-1 shadow-sm">
+                        📷 Scan
+                    </button>
+                </div>
+                <!-- Separate Scan QR button -->
+                <button onclick="bukaModalQrScan('tambah')"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-xl transition shadow-md hover:shadow-indigo-600/10 text-sm flex items-center gap-2 whitespace-nowrap">
+                    📷 Scan Tambah
+                </button>
+                <!-- Logout Button -->
+                <button onclick="logout()" 
+                    class="inline-flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold py-2 px-4 rounded-xl transition-all text-sm border border-rose-100">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Two Column Grid for Form and Stats Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+            
+            <!-- Left: Form Card (7 Columns on large screens) -->
+            <div class="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 id="judul-form" class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-500"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        Tambah Barang Baru
+                    </h2>
+                </div>
+
+                <!-- Hidden input untuk menyimpan ID saat mode Edit -->
+                <input type="hidden" id="input-id" value="">
+                
+                <form id="form-tambah" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Nama Barang -->
+                        <div class="flex flex-col gap-1">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Barang</label>
+                            <input type="text" id="input-nama" class="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 p-2.5 rounded-lg text-sm transition-all outline-none" placeholder="Misal: Mouse Wireless" required>
+                        </div>
+                        
+                        <!-- Harga -->
+                        <div class="flex flex-col gap-1">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Harga (Rp)</label>
+                            <input type="number" id="input-harga" class="w-full bg-slate-50 border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 p-2.5 rounded-lg text-sm transition-all outline-none" placeholder="Misal: 150000" required>
+                        </div>
+                    </div>
+
+                    <!-- Foto Barang -->
+                    <div class="flex flex-col gap-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Foto Barang</label>
+                        <input type="file" id="input-gambar" accept="image/*" class="w-full bg-slate-50 border border-slate-200 p-1.5 rounded-lg text-sm outline-none file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100">
+                    </div>
+
+                    <!-- Field Kode QR (dengan scanner kecil inline) -->
+                    <div class="form-group flex flex-col gap-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Kode QR / Barcode</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="form-kode-qr" placeholder="Scan kamera atau ketik manual"
+                                class="flex-1 bg-slate-50 border border-slate-200 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 p-2.5 rounded-lg text-sm transition-all outline-none">
+                            <button type="button" onclick="toggleFormScanner()"
+                                class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-semibold px-4 py-2.5 rounded-lg text-sm flex items-center gap-1.5 whitespace-nowrap">
+                                📷 Scan QR
+                            </button>
+                        </div>
+                        <div id="form-reader" style="display:none;" class="mt-2 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"></div>
+                    </div>
+
+                    <!-- Field GPS -->
+                    <div class="form-group flex flex-col gap-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Titik Lokasi Gudang</label>
+                        <div class="flex flex-col md:flex-row gap-2">
+                            <div style="display:flex; gap:0.5rem;" class="flex-1">
+                                <input type="text" id="form-latitude"  placeholder="Latitude"  readonly
+                                    class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-sm text-slate-500 focus:outline-none cursor-not-allowed">
+                                <input type="text" id="form-longitude" placeholder="Longitude" readonly
+                                    class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg text-sm text-slate-500 focus:outline-none cursor-not-allowed">
+                            </div>
+                            <button type="button" id="btn-lacak-gps" onclick="dapatkanLokasi()"
+                                class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-semibold px-4 py-2.5 rounded-lg text-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
+                                + Lacak GPS Saya
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Buttons -->
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" id="btn-batal" onclick="batalEdit()"
+                            class="hidden inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200 font-semibold py-2 px-6 rounded-lg transition-all text-sm h-[42px]">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                            Batal
+                        </button>
+                        <button type="submit" id="btn-submit"
+                            class="inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-2 px-6 rounded-lg transition-all shadow-md shadow-amber-500/10 hover:shadow-lg hover:shadow-amber-500/20 h-[42px] text-sm">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                <polyline points="17 21 17 13 7 13 7 21"/>
+                                <polyline points="7 3 7 8 15 8"/>
+                            </svg>
+                            Simpan
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right: Statistics Card (5 Columns) -->
+            <div class="lg:col-span-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 flex flex-col">
+                <h2 class="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-500"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                    Top 5 Barang Termahal
+                </h2>
+                
+                <!-- Chart container -->
+                <div class="relative flex-1 min-h-[250px] w-full bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Daftar Barang -->
+        <div class="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+            <!-- Table Header Card Controls -->
+            <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+                <div>
+                    <h2 class="text-lg font-extrabold text-slate-900">Daftar Inventaris Barang</h2>
+                    <p class="text-xs text-slate-500 font-medium mt-0.5">Semua data log barang terdaftar</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Search input -->
+                    <div class="relative">
+                        <input type="text" id="input-cari" onkeyup="jalankanPencarian()" placeholder="Cari nama barang..." 
+                            class="bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-4 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none text-sm transition-all w-60">
+                        <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <!-- Export PDF button -->
+                    <button onclick="window.open('cetak.html', '_blank')" 
+                        class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2 px-4 rounded-xl flex items-center gap-2 transition shadow-md shadow-rose-500/10 hover:shadow-lg text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        Ekspor PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Responsive Table Container -->
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-left border-collapse min-w-[700px]">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50/70">
+                            <th class="py-4 px-6 text-center w-24">Gambar</th>
+                            <th class="py-4 px-6">Nama Barang / Kode QR</th>
+                            <th class="py-4 px-6">Harga</th>
+                            <th class="py-4 px-6 text-center">Lokasi GPS</th>
+                            <th class="py-4 px-6 text-center w-40">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabel-barang" class="divide-y divide-slate-100 text-sm">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table Footer / Pagination -->
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 p-5 border-t border-slate-100 bg-slate-50/50">
+                <div class="text-xs font-semibold text-slate-500" id="info-halaman">
+                    Halaman 1 dari 1 (Total: 0 Data)
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-prev" onclick="gantiHalaman(-1)" 
+                        class="bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-xl transition border border-slate-200 shadow-sm text-xs disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Mundur
+                    </button>
+                    <button id="btn-next" onclick="gantiHalaman(1)" 
+                        class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl transition shadow-md shadow-amber-500/10 hover:shadow-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Lanjut
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Letakkan INI di ATAS Tabel Data Anda -->
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-gray-800">Daftar Barang</h2>
-        <div class="relative">
-            <input type="text" id="input-cari" onkeyup="jalankanPencarian()" placeholder="Cari nama barang..." class="border border-gray-300 rounded-lg py-2 px-4 pl-10 focus:ring-2 focus:ring-cyan-500 outline-none">
-            <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-        </div>
-        <!-- Tombol Buka Tab Baru untuk Print -->
-        <button onclick="window.open('cetak.html', '_blank')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition shadow-md">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-            Ekspor PDF
-        </button>
-    </div>
+    <!-- MODAL QR SCANNER - 3 state UI -->
+    <div id="modal-qr-scan" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 items-center justify-center hidden"
+         onclick="if(event.target===this)tutupModalQrScan()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <span id="qr-modal-title" class="font-extrabold text-slate-800 text-base">QR Scanner</span>
+                <button onclick="tutupModalQrScan()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold transition">✕</button>
+            </div>
+            <!-- Body -->
+            <div class="p-5">
+                <p id="qr-modal-hint" class="text-xs text-slate-500 mb-4 bg-slate-50 p-2.5 rounded-lg border border-slate-100"></p>
 
-    
-    <!-- Hidden input untuk menyimpan ID saat mode Edit -->
-    <input type="hidden" id="input-id" value="">
-    <form id="form-tambah" class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1">
-            <label class="block text-xs text-gray-500 font-bold uppercase mb-1">Nama Barang</label>
-            <input type="text" id="input-nama" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Misal: Mouse Wireless" required>
-        </div>
-        <div class="flex-1">
-            <label class="block text-xs text-gray-500 font-bold uppercase mb-1">Harga (Rp)</label>
-            <input type="number" id="input-harga" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="Misal: 150000" required>
-        </div>
-        
-        <div class="flex-1">
-    		<label class="block text-xs text-gray-500 font-bold uppercase mb-1">Foto Barang</label>
-    		<input type="file" id="input-gambar" accept="image/*" class="w-full border border-gray-300 p-1.5 rounded-lg">
-		</div>
-        
-        <div class="flex flex-col justify-end gap-2">
-            <button type="submit" id="btn-submit"
-                class="inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 hover:shadow-lg h-[42px]">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                    <polyline points="17 21 17 13 7 13 7 21"/>
-                    <polyline points="7 3 7 8 15 8"/>
-                </svg>
-                Simpan
-            </button>
-            <button type="button" id="btn-batal" onclick="batalEdit()"
-                class="hidden inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-600 hover:text-gray-800 border border-gray-300 font-semibold py-2 px-6 rounded-lg transition-all duration-200 h-[42px]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-                Batal
-            </button>
-        </div>
-    </form>
-</div>
+                <!-- Area kamera (diisi oleh Html5QrcodeScanner) -->
+                <div id="qr-reader-main" class="rounded-xl overflow-hidden border border-slate-200 bg-slate-950"></div>
 
-<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8 w-full">
-        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-500"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-            Top 5 Barang Termahal
-        </h2>
-        
-        <!-- Kunci Container: relative h-72 (tinggi ~288px) -->
-        <div class="relative h-72 w-full">
-            <canvas id="myChart"></canvas>
-        </div>
-    </div>
+                <!-- Kotak status (tersembunyi sampai ada hasil) -->
+                <div id="qr-status-box" style="display:none;" class="mt-4 space-y-3">
+                    <div id="qr-scanned-text" class="font-mono text-xs bg-slate-50 rounded-lg border border-slate-200 px-3 py-2.5 break-all text-slate-700"></div>
 
+                    <!-- State 1: Sedang cek API -->
+                    <div id="qr-state-loading" style="display:none;"
+                        class="flex items-center justify-center gap-2 py-4 text-xs font-semibold text-slate-500">
+                        <svg class="animate-spin h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Memeriksa database...
+                    </div>
 
-    <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-bold">Daftar Barang</h1>
-        
-    </div>
-    <table class="w-full bg-white shadow-md rounded">
-        <thead class="bg-emerald-500 text-white">
-            <tr> <th class="py-2 px-3">Gambar</th> <th class="py-2 px-3">Nama Barang</th> <th class="py-2 px-3">Harga</th> <th class="py-2 px-3">Aksi</th> </tr>
-        </thead>
-        <!-- Area ini sengaaja dibiarkan KOSONG. JS yang akan mengisinya -->
-        <tbody id="tabel-barang">
-        </tbody>
-    </table>
+                    <!-- State 2: Barang DITEMUKAN (kartu hijau) -->
+                    <div id="qr-state-found" style="display:none;">
+                        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 shadow-sm shadow-emerald-500/5">
+                            <div class="text-emerald-800 font-extrabold text-xs mb-1 flex items-center gap-1.5">
+                                <span class="flex h-2 w-2 relative">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                                BARANG TERDAFTAR
+                            </div>
+                            <div id="qr-found-nama" class="text-slate-800 font-bold text-sm"></div>
+                            <div id="qr-found-harga" class="text-emerald-600 font-extrabold text-sm mt-1"></div>
+                        </div>
+                        <button onclick="eksekusiQrFound()"
+                            class="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-md shadow-emerald-500/10 hover:shadow-lg">
+                            🔍 Tampilkan di Tabel
+                        </button>
+                    </div>
 
-    <!-- Letakkan INI di BAWAH Tabel Data Anda -->
-    <div class="flex justify-between items-center mt-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div class="text-sm text-gray-600" id="info-halaman">
-            Halaman 1 dari 1 (Total: 0 Data)
-        </div>
-        <div class="flex gap-2">
-            <button id="btn-prev" onclick="gantiHalaman(-1)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition disabled:opacity-50" disabled>Mundur</button>
-            <button id="btn-next" onclick="gantiHalaman(1)" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg transition disabled:opacity-50" disabled>Lanjut</button>
+                    <!-- State 3: Barang BELUM ADA (kartu kuning) -->
+                    <div id="qr-state-notfound" style="display:none;">
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm shadow-amber-500/5 text-amber-800 text-xs">
+                            <div class="font-extrabold mb-1">📦 BELUM TERDAFTAR</div>
+                            Kode ini belum ada di sistem. Tambah sebagai barang baru?
+                        </div>
+                        <button onclick="eksekusiQrTambah()"
+                            class="mt-3 w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl transition text-xs shadow-md shadow-amber-500/10 hover:shadow-lg">
+                            + Tambah Barang Baru
+                        </button>
+                    </div>
+
+                    <button onclick="resetQrScanner()"
+                        class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl transition text-xs">
+                        ← Scan Ulang
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
